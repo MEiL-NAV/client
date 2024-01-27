@@ -1,8 +1,7 @@
 import sys
 import time
-from datetime import datetime
 import numpy as np
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets
 import pyqtgraph as pg
 
 class LivePlot(QtWidgets.QWidget):
@@ -16,6 +15,11 @@ class LivePlot(QtWidgets.QWidget):
         self.max_points = max_points
         self.num_lines = num_lines
         self.curves = [self.plot_widget.plot(pen=pg.mkPen(color, width=1)) for color in colors]
+        if num_lines == 3:
+            legend = self.plot_widget.plotItem.addLegend()
+            legend.addItem(self.curves[0], "X")
+            legend.addItem(self.curves[1], "Y")
+            legend.addItem(self.curves[2], "Z")
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.plot_widget)
         self.setLayout(layout)
