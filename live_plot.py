@@ -1,7 +1,7 @@
 import sys
 import time
 import numpy as np
-from PyQt5 import QtWidgets
+from PyQt6 import QtWidgets
 import pyqtgraph as pg
 
 class LivePlot(QtWidgets.QWidget):
