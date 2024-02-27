@@ -1,10 +1,9 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QSlider, QWidget
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QColor
 from PyQt5 import QtOpenGL
 import OpenGL.GL as gl
 from OpenGL import GLU
-from OpenGL.arrays import vbo
 import numpy as np
 import sys
 import quaternion
@@ -18,10 +17,10 @@ class GLWidget(QtOpenGL.QGLWidget):
         self.rot_angle = 0
         self.rot_axis = [0, 0, 1]
 
-        self.timer = QTimer(self)
-        self.timer.setInterval(20)
-        self.timer.timeout.connect(self.updateGL)
-        self.timer.start()
+        # self.timer = QTimer(self)
+        # self.timer.setInterval(20)
+        # self.timer.timeout.connect(self.updateGL)
+        # self.timer.start()
             
     def initializeGL(self):
         self.qglClearColor(QColor(200, 200, 200)) # light gray background
@@ -62,6 +61,7 @@ class GLWidget(QtOpenGL.QGLWidget):
 
     def drawArrow(self, start, end):
         # Draw a line from start to end
+        gl.glLineWidth(2)
         gl.glBegin(gl.GL_LINES)
         gl.glVertex3fv(start)
         gl.glVertex3fv(end)
@@ -69,7 +69,7 @@ class GLWidget(QtOpenGL.QGLWidget):
 
         # Draw arrowhead
         direction = np.array(end) - np.array(start)
-        arrowhead_size = np.linalg.norm(direction) / 10.0
+        arrowhead_size = np.linalg.norm(direction) / 5.0
         direction /= np.linalg.norm(direction)
 
         gl.glPushMatrix()
@@ -112,36 +112,46 @@ class GLWidget(QtOpenGL.QGLWidget):
 
     def rotate(self, quat):
         rot = quaternion.as_rotation_vector(quat)
-        self.rot_axis = [rot[1], rot[2], rot[0]] / np.linalg.norm(rot)
+        self.rot_axis = [rot[1], rot[2], rot[0]] / -np.linalg.norm(rot)
         self.rot_angle = np.degrees(np.linalg.norm(rot))
 
         
-class MainWindow(QMainWindow):
+class OrientationVisualizerWindow(QMainWindow):
 
     def __init__(self):
         QMainWindow.__init__(self)
-        
+        self.closed = False
         self.resize(500, 500)
-        self.setWindowTitle('Hello OpenGL App')
+        self.setWindowTitle('Orientation')
 
         self.glWidget = GLWidget(self)
         self.initGUI()
+        self.resize(505,505)
         
     def initGUI(self):
         central_widget = QWidget()
         gui_layout = QVBoxLayout()
         central_widget.setLayout(gui_layout)
-
         self.setCentralWidget(central_widget)
-
         gui_layout.addWidget(self.glWidget)
+        self.glWidget.paintGL()
+    
+    def update(self, quat):
+        self.glWidget.rotate(quaternion.from_float_array(quat))
+        self.glWidget.updateGL()
+    
+    def closeEvent(self, event):
+        self.closed = True
 
-        self.glWidget.rotate(quaternion.from_float_array([0.9, 0.0, 0.0, 0.3]))
+    def is_closed(self):
+        return self.closed
 
-        
+
+
+# Example        
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    win = MainWindow()
+    win = OrientationVisualizerWindow()
     win.show()
 
     sys.exit(app.exec_())
