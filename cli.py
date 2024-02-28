@@ -5,29 +5,14 @@ from PyQt5 import QtWidgets
 
 from live_plot import LivePlotWindow
 from orientation_visulization import OrientationVisualizerWindow
-from math import cos, sin
+from comm_zmq import get_subscriber_sock
 
-context = zmq.Context()
-socket_gyro = context.socket(zmq.SUB)
-socket_gyro.set(zmq.CONFLATE,1)
-socket_gyro.set(zmq.RCVTIMEO,10)
-socket_gyro.connect("tcp://localhost:5555")
-socket_gyro.subscribe("g")
-
-socket_accel = context.socket(zmq.SUB)
-socket_accel.set(zmq.CONFLATE,1)
-socket_accel.set(zmq.RCVTIMEO,10)
-socket_accel.connect("tcp://localhost:5555")
-socket_accel.subscribe("a")
-
-socket_state = context.socket(zmq.SUB)
-socket_state.set(zmq.CONFLATE,1)
-socket_state.set(zmq.RCVTIMEO,10)
-socket_state.connect("tcp://localhost:5555")
-socket_state.subscribe("s")
+socket_gyro = get_subscriber_sock(5555,"g")
+socket_accel = get_subscriber_sock(5555,"a")
+socket_state = get_subscriber_sock(5555,"s")
 
 def parse_state(payload):
-    tokens = [float(elem) for elem in s[2:].split(",")]
+    tokens = [float(elem) for elem in payload[2:].split(",")]
     position = tokens[0:3]
     velocity = tokens[3:6]
     orientation = tokens[6:10]
@@ -46,8 +31,6 @@ window_gyroscope.show()
 
 window_visualization = OrientationVisualizerWindow()
 window_visualization.show()
-
-angle = 0
 
 while not window_accelerometer.is_closed() or not window_gyroscope.is_closed() or not window_visualization.is_closed():
 

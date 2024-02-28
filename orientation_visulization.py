@@ -9,7 +9,7 @@ import sys
 import quaternion
 
 
-class GLWidget(QtOpenGL.QGLWidget):
+class OrientationVisualizer(QtOpenGL.QGLWidget):
     def __init__(self, parent=None):
         self.parent = parent
         QtOpenGL.QGLWidget.__init__(self, parent)
@@ -23,7 +23,7 @@ class GLWidget(QtOpenGL.QGLWidget):
         # self.timer.start()
             
     def initializeGL(self):
-        self.qglClearColor(QColor(200, 200, 200)) # light gray background
+        self.qglClearColor(QColor(255, 255, 255)) # light gray background
         gl.glEnable(gl.GL_DEPTH_TEST)
          
     def resizeGL(self, width, height):
@@ -114,6 +114,7 @@ class GLWidget(QtOpenGL.QGLWidget):
         rot = quaternion.as_rotation_vector(quat)
         self.rot_axis = [rot[1], rot[2], rot[0]] / -np.linalg.norm(rot)
         self.rot_angle = np.degrees(np.linalg.norm(rot))
+        self.updateGL()
 
         
 class OrientationVisualizerWindow(QMainWindow):
@@ -124,7 +125,7 @@ class OrientationVisualizerWindow(QMainWindow):
         self.resize(500, 500)
         self.setWindowTitle('Orientation')
 
-        self.glWidget = GLWidget(self)
+        self.glWidget = OrientationVisualizer(self)
         self.initGUI()
         self.resize(505,505)
         
@@ -138,7 +139,6 @@ class OrientationVisualizerWindow(QMainWindow):
     
     def update(self, quat):
         self.glWidget.rotate(quaternion.from_float_array(quat))
-        self.glWidget.updateGL()
     
     def closeEvent(self, event):
         self.closed = True
@@ -153,6 +153,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = OrientationVisualizerWindow()
     win.show()
-
     sys.exit(app.exec_())
     
