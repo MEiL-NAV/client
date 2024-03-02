@@ -8,6 +8,8 @@ from comm_zmq import get_subscriber_sock
 from live_plot import LivePlot
 from orientation_visulization import OrientationVisualizer
 
+ZMQ_PORT = 5555
+
 class InfoTab(QWidget):
     def __init__(self):
         QWidget.__init__(self)
@@ -69,7 +71,7 @@ class InfoTab(QWidget):
         columns.addLayout(right_col, 2)
         self.setLayout(columns)
 
-        self.socket_state = get_subscriber_sock(5555,"s")
+        self.socket_state = get_subscriber_sock(ZMQ_PORT,"s")
 
         self.timer = QTimer(self)
         self.timer.setInterval(20)
@@ -105,8 +107,8 @@ class SensorTab(QWidget):
         columns.addWidget(self.gyro_live_plot)
         self.setLayout(columns)
 
-        self.socket_gyro = get_subscriber_sock(5555,"g")
-        self.socket_accel = get_subscriber_sock(5555,"a")
+        self.socket_gyro = get_subscriber_sock(ZMQ_PORT,"g")
+        self.socket_accel = get_subscriber_sock(ZMQ_PORT,"a")
 
         self.timer = QTimer(self)
         self.timer.setInterval(20)
@@ -129,6 +131,61 @@ class SensorTab(QWidget):
     
     def __del__(self):
         pass
+
+class ForceTab(QWidget):
+    def __init__(self):
+        QWidget.__init__(self)
+        self.NO_OF_COLUMNS = 3
+        self.no_of_sensors = 0
+        self.plots = []
+        self.prepare_layout(6)
+
+        self.socket_force = get_subscriber_sock(ZMQ_PORT,"f")
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(20)
+        self.timer.timeout.connect(self.update)
+        self.timer.start()
+
+    def update_plots(self, time, forces):
+        self.prepare_layout(len(forces))
+        for (i,elem) in enumerate(forces):
+            self.plots[i].append(time, elem)
+        pass
+
+    def prepare_layout(self, no_of_sensors):
+        if no_of_sensors == self.no_of_sensors:
+            return
+        
+        while self.no_of_sensors > no_of_sensors:
+            self.plots.pop()
+            self.no_of_sensors -= 1
+        while self.no_of_sensors < no_of_sensors:
+            self.plots.append(LivePlot(max_points=100, num_lines=1, title=f"Force {self.no_of_sensors+1}", bg_color="w"))
+            self.no_of_sensors += 1
+
+        columns = []
+        for i in range(self.NO_OF_COLUMNS):
+            columns.append(QVBoxLayout())
+        
+        for i in range(self.no_of_sensors):
+            columns[i % self.NO_OF_COLUMNS].addWidget(self.plots[i])
+        
+        layout = QHBoxLayout()
+        for i in range(self.NO_OF_COLUMNS):
+            layout.addLayout(columns[i])
+        
+        self.setLayout(layout)
+
+    def update(self):
+        try:
+            s = self.socket_force.recv_string()
+            tokens = [float(elem) for elem in s[2:].split(",")]
+            time = tokens[0]
+            forces = tokens[1:]
+            self.update_plots(time, forces)
+        except:
+            pass
 
 class Highlighter(QSyntaxHighlighter):
     def __init__(self, parent):
@@ -183,16 +240,19 @@ class GUI(QMainWindow):
         QMainWindow.__init__(self)
         self.closed = False
         self.resize(1280, 960)
+        self.setWindowIcon(QIcon('logo.png'))
         self.setWindowTitle('MEiL-NAV')
 
         self.info_tab = InfoTab()
         self.sensor_tab = SensorTab()
+        self.force_tab = ForceTab()
         self.console_tab = ConsoleTab()
         self.action_tab = QWidget()
         
         self.tabs = QTabWidget()
         self.tabs.addTab(self.info_tab, "Info")
         self.tabs.addTab(self.sensor_tab, "Sensors")
+        self.tabs.addTab(self.force_tab, "Forces")
         self.tabs.addTab(self.action_tab, "Actions")
         self.tabs.addTab(self.console_tab, "Console")
 
