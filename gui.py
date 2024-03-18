@@ -4,6 +4,7 @@ from PyQt5.QtGui import *
 import sys
 
 import quaternion
+from comet_plot import CometPlotWidget
 from comm_zmq import get_subscriber_sock
 from live_plot import LivePlot
 from orientation_visulization import OrientationVisualizer
@@ -13,8 +14,8 @@ ZMQ_PORT = 5555
 class InfoTab(QWidget):
     def __init__(self):
         QWidget.__init__(self)
-        header1_font = QFont('Roboto', 32)
-        header2_font = QFont('Roboto', 20)
+        header1_font = QFont('Roboto', 20)
+        header2_font = QFont('Roboto', 14)
         style_sheet = "background-color: lightgray; border-radius: 15px;"
 
         left_col = QVBoxLayout()
@@ -57,14 +58,25 @@ class InfoTab(QWidget):
         orientation_label.setFont(header2_font)
         orientation_layout.addWidget(orientation_label, 1)
         self.orientation_vis = OrientationVisualizer()
-        orientation_layout.addWidget(self.orientation_vis, 7)
+        orientation_layout.addWidget(self.orientation_vis, 9)
         orientation_widget = QWidget()
         orientation_widget.setLayout(orientation_layout)
         orientation_widget.setContentsMargins(20,10,20,10)
         orientation_widget.setStyleSheet(style_sheet)
         right_col.addWidget(orientation_widget,1)
 
-        right_col.addWidget(QWidget(),1)
+        preview_layout = QVBoxLayout()
+        preview_label = QLabel("Preview (XY plane)")
+        preview_label.setAlignment(Qt.AlignLeft)
+        preview_label.setFont(header2_font)
+        preview_layout.addWidget(preview_label, 1)
+        self.preview_plot = CometPlotWidget(title="", max_points=500, bg_color="w")
+        preview_layout.addWidget(self.preview_plot, 9)
+        preview_widget = QWidget()
+        preview_widget.setLayout(preview_layout)
+        preview_widget.setContentsMargins(20,10,20,10)
+        preview_widget.setStyleSheet(style_sheet)
+        right_col.addWidget(preview_widget,1)
 
         columns = QHBoxLayout()
         columns.addLayout(left_col, 3)
@@ -94,6 +106,7 @@ class InfoTab(QWidget):
             self.velocity_label.setText(f"Velocity\nX: {velocity[0]}\nY: {velocity[1]}\nZ: {velocity[2]}")
             self.gyro_bias_label.setText(f"Gyro bias: {gyro_bias}")
             self.orientation_vis.rotate(quaternion.from_float_array(orientation))
+            self.preview_plot.append(position[0], position[1])
         except:
             pass
 

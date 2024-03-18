@@ -112,8 +112,12 @@ class OrientationVisualizer(QtOpenGL.QGLWidget):
 
     def rotate(self, quat):
         rot = quaternion.as_rotation_vector(quat)
-        self.rot_axis = [rot[1], rot[2], rot[0]] / -np.linalg.norm(rot)
-        self.rot_angle = np.degrees(np.linalg.norm(rot))
+        if(np.linalg.norm(rot) < 1e-6):
+            self.rot_axis = [0, 0, 1]
+            self.rot_angle = 0
+        else:
+            self.rot_axis = [rot[1], rot[2], rot[0]] / -np.linalg.norm(rot)
+            self.rot_angle = np.degrees(np.linalg.norm(rot))
         self.updateGL()
 
         
