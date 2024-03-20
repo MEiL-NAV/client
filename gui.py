@@ -1,3 +1,4 @@
+import math
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import *
@@ -46,9 +47,16 @@ class InfoTab(QWidget):
         self.gyro_bias_label.setStyleSheet(style_sheet)
         left_col.addWidget(self.gyro_bias_label)
 
+        self.drawbar_label = QLabel("Drawbar az: \xb0, el: \xb0")
+        self.drawbar_label.setWordWrap(True)
+        self.drawbar_label.setFont(header2_font)
+        self.drawbar_label.setContentsMargins(20,10,20,10)
+        self.drawbar_label.setStyleSheet(style_sheet)
+        left_col.addWidget(self.drawbar_label)
+
         left_col.setAlignment(Qt.AlignTop)
-    
-        
+
+
         right_col = QVBoxLayout()
         right_col.setContentsMargins(30,30,30,30)
 
@@ -70,7 +78,7 @@ class InfoTab(QWidget):
         preview_label.setAlignment(Qt.AlignLeft)
         preview_label.setFont(header2_font)
         preview_layout.addWidget(preview_label, 1)
-        self.preview_plot = CometPlotWidget(title="", max_points=500, bg_color="w")
+        self.preview_plot = CometPlotWidget(title="", max_points=200, bg_color="w")
         preview_layout.addWidget(self.preview_plot, 9)
         preview_widget = QWidget()
         preview_widget.setLayout(preview_layout)
@@ -96,18 +104,21 @@ class InfoTab(QWidget):
         velocity = tokens[3:6]
         orientation = tokens[6:10]
         gyro_bias = tokens[10:13]
-        return (position, velocity, orientation, gyro_bias)
+        drawbar = tokens[13:15]
+        return (position, velocity, orientation, gyro_bias, drawbar)
 
     def update(self):
         try:
             s = self.socket_state.recv_string()
-            position, velocity, orientation, gyro_bias = self.parse_state(s)
+            position, velocity, orientation, gyro_bias, drawbar = self.parse_state(s)
             self.position_label.setText(f"Position\nX: {position[0]}\nY: {position[1]}\nZ: {position[2]}")
             self.velocity_label.setText(f"Velocity\nX: {velocity[0]}\nY: {velocity[1]}\nZ: {velocity[2]}")
             self.gyro_bias_label.setText(f"Gyro bias: {gyro_bias}")
+            self.drawbar_label.setText(f"Drawbar az: {round(drawbar[0]* 180.0 / math.pi, 2)}\xb0, el: {round(drawbar[1]* 180.0 / math.pi, 2)}\xb0")
             self.orientation_vis.rotate(quaternion.from_float_array(orientation))
             self.preview_plot.append(position[0], position[1])
-        except:
+        except Exception as e:
+            print(str(e))
             pass
 
 class SensorTab(QWidget):
