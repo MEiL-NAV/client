@@ -9,6 +9,7 @@ from comet_plot import CometPlotWidget
 from comm_zmq import get_subscriber_sock
 from live_plot import LivePlot
 from orientation_visulization import OrientationVisualizer
+import random
 
 ZMQ_PORT = 5555
 
@@ -139,17 +140,23 @@ class SensorTab(QWidget):
         self.timer.timeout.connect(self.update)
         self.timer.start()
 
+        self.time = 0
+
     def update(self):
+        self.time += 0.02
         try:
-            s = self.socket_accel.recv_string()
-            tokens = [float(elem) for elem in s[2:].split(",")]
-            self.accel_live_plot.append(tokens[0]/1000.0, tokens[1:])
+            #s = self.socket_accel.recv_string()
+            #tokens = [float(elem) for elem in s[2:].split(",")]
+            # self.accel_live_plot.append(tokens[0]/1000.0, tokens[1:])
+            
+            self.accel_live_plot.append(self.time, [0.0, 0.0, 9.81])
         except:
             pass
         try:
-            s = self.socket_gyro.recv_string()
-            tokens = [float(elem)/1000.0 for elem in s[2:].split(",")]
-            self.gyro_live_plot.append(tokens[0], tokens[1:])
+            #s = self.socket_gyro.recv_string()
+            #tokens = [float(elem)/1000.0 for elem in s[2:].split(",")]
+            #self.gyro_live_plot.append(tokens[0], tokens[1:])
+            self.gyro_live_plot.append(self.time, [(random.random() * 2.0 - 1.0) for i in range(3)])
         except:
             pass
     
@@ -170,6 +177,8 @@ class ForceTab(QWidget):
         self.timer.setInterval(20)
         self.timer.timeout.connect(self.update)
         self.timer.start()
+
+        self.time = 0
 
     def update_plots(self, time, forces):
         self.prepare_layout(len(forces))
@@ -203,11 +212,13 @@ class ForceTab(QWidget):
 
     def update(self):
         try:
-            s = self.socket_force.recv_string()
-            tokens = [float(elem) for elem in s[2:].split(",")]
-            time = tokens[0]
-            forces = tokens[1:]
-            self.update_plots(time, forces)
+            # s = self.socket_force.recv_string()
+            # tokens = [float(elem) for elem in s[2:].split(",")]
+            # time = tokens[0]
+            # forces = tokens[1:]
+            self.time += 0.02
+            forces = [(random.random() * 20 - 10) for i in range(6)]
+            self.update_plots(self.time, forces)
         except:
             pass
 
@@ -271,13 +282,13 @@ class GUI(QMainWindow):
         self.sensor_tab = SensorTab()
         self.force_tab = ForceTab()
         self.console_tab = ConsoleTab()
-        self.action_tab = QWidget()
+        # self.action_tab = QWidget()
         
         self.tabs = QTabWidget()
         self.tabs.addTab(self.info_tab, "Info")
         self.tabs.addTab(self.sensor_tab, "Sensors")
         self.tabs.addTab(self.force_tab, "Forces")
-        self.tabs.addTab(self.action_tab, "Actions")
+        # self.tabs.addTab(self.action_tab, "Actions")
         self.tabs.addTab(self.console_tab, "Console")
 
         self.setCentralWidget(self.tabs)
